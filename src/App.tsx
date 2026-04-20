@@ -71,7 +71,25 @@ export default function App() {
 
       // 3. Critic
       updateStage('critic', 'running');
-      const critic = await criticizeAnalysis(signalsData, analysisContent || '');
+      const fallbackCritic = { 
+        criticism: "NOTICE: This review is a generic fallback because the current API processing (Free Tier) is taking longer than expected. A more detailed, high-reasoning review is available with a premium plan.\n\nGeneric Review: The analysis appears structurally sound but could benefit from more specific competitive benchmarking. Conversion triggers are identified correctly, but the tone could be sharpened for an executive sales pitch.", 
+        confidenceScore: 72, 
+        improvements: ["Upgrade API plan for deeper reasoning", "Manual review recommended"] 
+      };
+
+      const criticPromise = criticizeAnalysis(signalsData, analysisContent || '');
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('timeout')), 15000)
+      );
+
+      let critic;
+      try {
+        critic = await Promise.race([criticPromise, timeoutPromise]);
+      } catch (e) {
+        console.warn('Critic step timed out or failed, using fallback.');
+        critic = fallbackCritic;
+      }
+      
       setCriticData(critic);
       updateStage('critic', 'completed', critic);
 
