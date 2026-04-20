@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #0A0A0B;
+  --color-brand-card: #141417;
+  --color-brand-accent: #6366F1;
+  --color-brand-text-primary: #F8FAFC;
+  --color-brand-text-secondary: #94A3B8;
+  --color-brand-border: #26262E;
+  
+  --font-serif: "Georgia", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-brand-text-primary font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-serif italic;
+  }
+}
+
+.data-row-custom:hover {
+  @apply bg-brand-accent/10;
+}
