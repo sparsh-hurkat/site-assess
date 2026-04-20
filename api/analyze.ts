@@ -38,12 +38,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Format the output as a clean, professional markdown report.
     `;
 
-    const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
 
-    return res.status(200).json({ text });
+    return res.status(200).json({ text: response.text });
   } catch (error: any) {
     console.error('Analyze error:', error.message);
     return res.status(500).json({ error: `Analysis failed: ${error.message}` });

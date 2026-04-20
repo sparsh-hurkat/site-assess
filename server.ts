@@ -73,7 +73,8 @@ async function startServer() {
     if (!signals) return res.status(400).json({ error: 'Signals required' });
 
     try {
-      const ai = new (await import('@google/genai')).GoogleGenAI(process.env.GEMINI_API_KEY || "");
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
       const prompt = `
         Analyze the following website signals and provide a structured site audit for a sales team.
         The goal is to identify pain points and a "hook" for a booking meeting.
@@ -97,10 +98,12 @@ async function startServer() {
         Format the output as a clean, professional markdown report.
       `;
 
-      const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      res.json({ text });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+
+      res.json({ text: response.text });
     } catch (err: any) {
       console.error('Analyze proxy error:', err.message);
       res.status(500).json({ error: err.message });
@@ -113,8 +116,8 @@ async function startServer() {
     if (!signals || !analysis) return res.status(400).json({ error: 'Signals and analysis required' });
 
     try {
-      const { GoogleGenAI, SchemaType } = await import('@google/genai');
-      const ai = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
+      const { GoogleGenAI, Type } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
       const prompt = `
         You are a critical site audit reviewer. Your job is to find flaws, hallucinations, or generic advice in the analysis provided.
         
@@ -133,24 +136,24 @@ async function startServer() {
         Output in JSON format.
       `;
 
-      const model = ai.getGenerativeModel({
+      const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",
-        generationConfig: {
+        contents: prompt,
+        config: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: SchemaType.OBJECT,
+            type: Type.OBJECT,
             properties: {
-              criticism: { type: SchemaType.STRING },
-              confidenceScore: { type: SchemaType.NUMBER },
-              improvements: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+              criticism: { type: Type.STRING },
+              confidenceScore: { type: Type.NUMBER },
+              improvements: { type: Type.ARRAY, items: { type: Type.STRING } }
             },
             required: ["criticism", "confidenceScore", "improvements"]
           }
         }
       });
 
-      const result = await model.generateContent(prompt);
-      res.json(JSON.parse(result.response.text()));
+      res.json(JSON.parse(response.text || "{}"));
     } catch (err: any) {
       console.error('Critic proxy error:', err.message);
       res.status(500).json({ error: err.message });

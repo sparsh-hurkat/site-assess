@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, SchemaType } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -19,10 +19,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       You are a critical site audit reviewer. Your job is to find flaws, hallucinations, or generic advice in the analysis provided.
       
       Original Signals:
-      ${JSON.stringify(signals, null, 2)}
+      ` + JSON.stringify(signals, null, 2) + `
       
       Proposed Analysis:
-      ${analysis}
+      ` + analysis + `
       
       Tasks:
       1. Identify any generic "filler" statements.
@@ -33,27 +33,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Output in JSON format matching the requested schema.
     `;
 
-    const model = ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model: "gemini-3.1-pro-preview",
-      generationConfig: {
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
         responseSchema: {
-          type: SchemaType.OBJECT,
+          type: Type.OBJECT,
           properties: {
-            criticism: { type: SchemaType.STRING },
-            confidenceScore: { type: SchemaType.NUMBER },
-            improvements: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+            criticism: { type: Type.STRING },
+            confidenceScore: { type: Type.NUMBER },
+            improvements: { type: Type.ARRAY, items: { type: Type.STRING } }
           },
           required: ["criticism", "confidenceScore", "improvements"]
         }
       }
     });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const json = JSON.parse(response.text());
-
-    return res.status(200).json(json);
+    return res.status(200).json(JSON.parse(response.text || "{}"));
   } catch (error: any) {
     console.error('Critic error:', error.message);
     return res.status(500).json({ error: `Criticism failed: ${error.message}` });
